@@ -2,9 +2,10 @@
 from azure.eventhub import TransportType
 from azure.eventhub import EventHubConsumerClient
 import json
-from beepy import beep
 import os 
-
+import winsound 
+import time as t
+from win10toast import ToastNotifier
 # If you have access to the Event Hub-compatible connection string from the Azure portal, then
 # you can skip the Azure CLI commands above, and assign the connection string directly here.
 CONNECTION_STR = f'Endpoint=sb://ihsuprodsnres017dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=9TuRqRLsoBgLi7RpGWafgvjCexduBrM9qBXJ0ttvmQI=;EntityPath=iothub-ehub-iothubfrut-3381630-6ba88323eb'
@@ -25,14 +26,24 @@ def message_process(message):
         TIMER = 0
         VALUE_HISTORY.clear()
 def noise_Generate():
+    
+    create_notif()
     #make noise
+    winsound.Beep(2000,8000)
     print('Molino lleva mucho tiempo en Vacio ------------------\n')
     print('Ultimas 5 mediciones\n')
-    beep(sound=3)
     for i in VALUE_HISTORY:
         print("Medicion ", i)
         print()
 
+
+def create_notif():
+    toaster = ToastNotifier()
+    toaster.show_toast("MOLINO LLEVA TIEMPO EN VACIO",
+                      "REVISAR FUNCIONAMIENTO DEL MOLINO",
+                      icon_path=None,
+                      duration=5,
+                      threaded=True)
 # Define callbacks to process events
 def on_event_batch(partition_context, events):
     for event in events:
@@ -52,7 +63,6 @@ def on_error(partition_context, error):
 
 
 def main():
-    os.system("beep -f 555 -l 460")
     client = EventHubConsumerClient.from_connection_string(
         conn_str=CONNECTION_STR,
         consumer_group="iotfrutilight",
