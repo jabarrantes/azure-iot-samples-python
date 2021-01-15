@@ -34,8 +34,8 @@ IOTHUB_SAS_KEY = "{your service primary key}"
 
 # If you have access to the Event Hub-compatible connection string from the Azure portal, then
 # you can skip the Azure CLI commands above, and assign the connection string directly here.
-CONNECTION_STR = f'Endpoint={EVENTHUB_COMPATIBLE_ENDPOINT}/;SharedAccessKeyName=service;SharedAccessKey={IOTHUB_SAS_KEY};EntityPath={EVENTHUB_COMPATIBLE_PATH}'
-
+#CONNECTION_STR = f'Endpoint={EVENTHUB_COMPATIBLE_ENDPOINT}/;SharedAccessKeyName=service;SharedAccessKey={IOTHUB_SAS_KEY};EntityPath={EVENTHUB_COMPATIBLE_PATH}'
+CONNECTION_STR = 'Endpoint=sb://ihsuprodsnres017dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=9TuRqRLsoBgLi7RpGWafgvjCexduBrM9qBXJ0ttvmQI=;EntityPath=iothub-ehub-iothubfrut-3381630-6ba88323eb'
 # Define callbacks to process events
 async def on_event_batch(partition_context, events):
     for event in events:
@@ -61,7 +61,7 @@ def main():
     loop = asyncio.get_event_loop()
     client = EventHubConsumerClient.from_connection_string(
         conn_str=CONNECTION_STR,
-        consumer_group="$default",
+        consumer_group="iotfrutilight",
         # transport_type=TransportType.AmqpOverWebsocket,  # uncomment it if you want to use web socket
         # http_proxy={  # uncomment if you want to use proxy 
         #     'proxy_hostname': '127.0.0.1',  # proxy hostname.
