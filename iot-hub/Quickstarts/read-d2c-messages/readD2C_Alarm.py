@@ -5,37 +5,51 @@ import json
 import os 
 import winsound 
 import time as t
+import threading
+import concurrent.futures
 from win10toast import ToastNotifier
 # If you have access to the Event Hub-compatible connection string from the Azure portal, then
 # you can skip the Azure CLI commands above, and assign the connection string directly here.
 CONNECTION_STR = f'Endpoint=sb://ihsuprodsnres017dednamespace.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=9TuRqRLsoBgLi7RpGWafgvjCexduBrM9qBXJ0ttvmQI=;EntityPath=iothub-ehub-iothubfrut-3381630-6ba88323eb'
-TIMER = 0
-VALUE_HISTORY = []
+
+
+VALUE_HISTORY = [] #List that contains history of values for last few measurements
+
+#Parameters------
+LOW_POWER_RANGE = [10,200]
+TIMER = 0 #Variable to store time on low power 
+WAIT_TIME = 10 #Time to wait 
+
 def message_process(message):
     msg = json.loads(message)
     print("Molino valueß", msg['Molino'])
     global TIMER 
     global VALUE_HISTORY
-    if msg['Molino'] > 10 and msg['Molino'] < 200:  
+    if msg['Molino'] > LOW_POWER_RANGE[0] and msg['Molino'] < LOW_POWER_RANGE[1]:  
         TIMER += 1 
         VALUE_HISTORY.append(msg['Molino'])
         print('Una medicion en vacio !- -- - - - \n')
-        if TIMER > 0: 
-            noise_Generate()
+        if TIMER > WAIT_TIME: 
+            trigger_Alarm()
     else: 
         TIMER = 0
         VALUE_HISTORY.clear()
-def noise_Generate():
-    
-    create_notif()
+def trigger_Alarm():
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        executor.submit(create_notif)
+        executor.submit(generate_sound)
     #make noise
-    winsound.Beep(2000,8000)
+    #winsound.Beep(2000,8000)
     print('Molino lleva mucho tiempo en Vacio ------------------\n')
     print('Ultimas 5 mediciones\n')
     for i in VALUE_HISTORY:
         print("Medicion ", i)
         print()
 
+def generate_sound():
+    for i in range(10):
+        winsound.Beep(2000,2000)
+        winsound.Beep(0,2000)
 
 def create_notif():
     toaster = ToastNotifier()
