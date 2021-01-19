@@ -7,6 +7,7 @@ import winsound
 import time as t
 import threading
 import concurrent.futures
+from playsound import playsound
 from win10toast import ToastNotifier
 # If you have access to the Event Hub-compatible connection string from the Azure portal, then
 # you can skip the Azure CLI commands above, and assign the connection string directly here.
@@ -19,6 +20,9 @@ VALUE_HISTORY = [] #List that contains history of values for last few measuremen
 LOW_POWER_RANGE = [10,200]
 TIMER = 0 #Variable to store time on low power 
 WAIT_TIME = 10 #Time to wait 
+
+#Notification 
+toaster = ToastNotifier()
 
 def message_process(message):
     msg = json.loads(message)
@@ -47,17 +51,18 @@ def trigger_Alarm():
         print()
 
 def generate_sound():
-    for i in range(10):
-        winsound.Beep(2000,2000)
-        winsound.Beep(0,2000)
+    for i in range(2):
+        #winsound.PlaySound('alarm.wav', winsound.SND_FILENAME)
+        playsound(r'C:\Users\jabarrantes\Documents\GitHub\azure-iot-samples-python\iot-hub\Quickstarts\read-d2c-messages\alarm.wav')
+        t.sleep(0.3)
+        
 
 def create_notif():
-    toaster = ToastNotifier()
-    toaster.show_toast("MOLINO LLEVA TIEMPO EN VACIO",
-                      "REVISAR FUNCIONAMIENTO DEL MOLINO",
-                      icon_path=None,
-                      duration=5,
-                      threaded=True)
+    for i in range(2):
+        toaster.show_toast("MOLINO LLEVA TIEMPO EN VACIO",
+                        "REVISAR FUNCIONAMIENTO DEL MOLINO",
+                        icon_path=None,
+                        duration=5)
 # Define callbacks to process events
 def on_event_batch(partition_context, events):
     for event in events:
@@ -91,4 +96,6 @@ def main():
         print("Receiving has stopped.")
 
 if __name__ == '__main__':
-    main()
+    #main()
+    
+    trigger_Alarm()
