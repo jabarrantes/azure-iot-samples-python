@@ -15,55 +15,60 @@ CONNECTION_STR = f'Endpoint=sb://ihsuprodsnres017dednamespace.servicebus.windows
 
 
 VALUE_HISTORY = [] #List that contains history of values for last few measurements
-
-#Parameters------
-LOW_POWER_RANGE = [10,200]
-TIMER = 0 #Variable to store time on low power 
-WAIT_TIME = 10 #Time to wait 
+ALARM_FLAG = False
 
 #Notification 
 toaster = ToastNotifier()
 
 def message_process(message):
     msg = json.loads(message)
-    print("Molino valueß", msg['Molino'])
-    global TIMER 
-    global VALUE_HISTORY
-    if msg['Molino'] > LOW_POWER_RANGE[0] and msg['Molino'] < LOW_POWER_RANGE[1]:  
-        TIMER += 1 
-        VALUE_HISTORY.append(msg['Molino'])
-        print('Una medicion en vacio !- -- - - - \n')
-        if TIMER > WAIT_TIME: 
-            trigger_Alarm()
-    else: 
-        TIMER = 0
-        VALUE_HISTORY.clear()
+    global ALARM_FLAG
+    print("Molino value", msg['Molino'])
+    VALUE_HISTORY.append(float(msg['Molino']))
+    if(msg['test'] == '20 Min en Vacio'): 
+        ALARM_FLAG = True
+    
 def trigger_Alarm():
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        executor.submit(create_notif)
-        executor.submit(generate_sound)
-    #make noise
-    #winsound.Beep(2000,8000)
-    print('Molino lleva mucho tiempo en Vacio ------------------\n')
-    print('Ultimas 5 mediciones\n')
-    for i in VALUE_HISTORY:
-        print("Medicion ", i)
-        print()
+    while True: 
+        while ALARM_FLAG:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                executor.submit(create_notif)
+                executor.submit(generate_sound)
+            #make noise
+            #winsound.Beep(2000,8000)
+            print('Molino lleva mucho tiempo en Vacio ------------------\n')
+            print('Ultimas 5 mediciones\n')
+            for i in VALUE_HISTORY:
+                print("Medicion ", i)
+                print()
+        t.sleep(0.1)
 
 def generate_sound():
-    for i in range(2):
+    for i in range(3):
         #winsound.PlaySound('alarm.wav', winsound.SND_FILENAME)
-        playsound(r'C:\Users\jabarrantes\Documents\GitHub\azure-iot-samples-python\iot-hub\Quickstarts\read-d2c-messages\alarm.wav')
+        if ALARM_FLAG:
+            #playsound(r'C:\Users\jabarrantes\Documents\GitHub\azure-iot-samples-python\iot-hub\Quickstarts\read-d2c-messages\alarm.wav')
+            winsound.PlaySound(r'C:\Users\jabarrantes\Documents\GitHub\azure-iot-samples-python\iot-hub\Quickstarts\read-d2c-messages\alarm.wav', winsound.SND_LOOP | winsound.SND_ASYNC)
+        else:
+            winsound.PlaySound(None, winsound.SND_PURGE)
+            break
         t.sleep(0.3)
-        
+def disable_alarm():
+    global ALARM_FLAG
+    ALARM_FLAG = False 
+    winsound.PlaySound(None, winsound.SND_PURGE)
+    print("Alarm off")     
 
 def create_notif():
     for i in range(2):
-        toaster.show_toast("MOLINO LLEVA TIEMPO EN VACIO",
-                        "REVISAR FUNCIONAMIENTO DEL MOLINO",
-                        icon_path=None,
-                        duration=5)
-# Define callbacks to process events
+        if ALARM_FLAG:
+            toaster.show_toast("MOLINO LLEVA TIEMPO EN VACIO",
+                            "REVISAR FUNCIONAMIENTO DEL MOLINO",
+                            icon_path=r'C:\Users\jabarrantes\Documents\GitHub\azure-iot-samples-python\iot-hub\Quickstarts\read-d2c-messages\logo.ico',
+                            duration=5, callback_on_click=disable_alarm)
+        else:
+            break
+    # Define callbacks to process events
 def on_event_batch(partition_context, events):
     for event in events:
         print("Telemetry received: ", event.body_as_str())
@@ -97,5 +102,6 @@ def main():
 
 if __name__ == '__main__':
     #main()
-    
-    trigger_Alarm()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        executor.submit(main)
+        executor.submit(trigger_Alarm)
