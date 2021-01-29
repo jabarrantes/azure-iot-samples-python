@@ -16,18 +16,26 @@ CONNECTION_STR = f'Endpoint=sb://ihsuprodsnres017dednamespace.servicebus.windows
 
 VALUE_HISTORY = [] #List that contains history of values for last few measurements
 ALARM_FLAG = False
-
+ALARM_ENABLE = True 
 #Notification 
 toaster = ToastNotifier()
+#Declaring Lock 
+lock = threading.Lock()
 
 def message_process(message):
     msg = json.loads(message)
+    global ALARM_ENABLE
     global ALARM_FLAG
     print("Molino value", msg['Molino'])
     VALUE_HISTORY.append(float(msg['Molino']))
     if(msg['test'] == '20 Min en Vacio'): 
-        ALARM_FLAG = True
-    
+        if(ALARM_ENABLE):
+            ALARM_FLAG = True
+    if(msg['Molino'] < 5 or msg['Molino'] > 50):
+        print("Enabling Alarm Again ---")
+        lock.acquire()
+        ALARM_ENABLE = True
+        lock.release()
 def trigger_Alarm():
     while True: 
         while ALARM_FLAG:
@@ -55,7 +63,12 @@ def generate_sound():
         t.sleep(0.3)
 def disable_alarm():
     global ALARM_FLAG
+    global ALARM_ENABLE
+    print("Disabling Alarms")
+    lock.acquire()
     ALARM_FLAG = False 
+    ALARM_ENABLE = False 
+    lock.release()
     winsound.PlaySound(None, winsound.SND_PURGE)
     print("Alarm off")     
 
